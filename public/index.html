@@ -101,12 +101,12 @@ button:focus-visible,input:focus-visible{outline:3px solid #e0b24a;outline-offse
 </head>
 <body>
 
-<canvas id="stage" aria-label="カタカナを、指でなぞって書く画面"></canvas>
+<canvas id="stage" aria-label="文字を、指でなぞって書く画面"></canvas>
 
 <div id="intro" role="dialog" aria-labelledby="introTitle">
   <div class="card">
     <h1 id="introTitle">もじ あそび（支援者用の説明）</h1>
-    <p>カタカナを、一文字ずつ、書き順のとおりに、指でなぞって書く遊びです。ア から始まり、書けると、つぎの文字へ進みます。</p>
+    <p>カタカナとひらがなを、一文字ずつ、書き順のとおりに、指でなぞって書く遊びです。はじめはカタカナの「ア」です。書けると、つぎの文字へ進みます。ひらがなは、支援者メニューの「文字の種類」で選びます。</p>
     <h2>すすめ方</h2>
     <ol>
       <li>「はじめる」を押す。ます目に、うすい色の文字が出ます。</li>
@@ -146,19 +146,16 @@ button:focus-visible,input:focus-visible{outline:3px solid #e0b24a;outline-offse
     <p class="note">押すとすぐに変わります。カメラもマイクも使いません。名前や記録は保存しません。</p>
 
     <div class="row">
-      <h2>行</h2>
-      <div class="opts rows">
-        <button class="opt kana" data-set="row" data-v="0">ア行</button>
-        <button class="opt kana" data-set="row" data-v="1">カ行</button>
-        <button class="opt kana" data-set="row" data-v="2">サ行</button>
-        <button class="opt kana" data-set="row" data-v="3">タ行</button>
-        <button class="opt kana" data-set="row" data-v="4">ナ行</button>
-        <button class="opt kana" data-set="row" data-v="5">ハ行</button>
-        <button class="opt kana" data-set="row" data-v="6">マ行</button>
-        <button class="opt kana" data-set="row" data-v="7">ヤ行</button>
-        <button class="opt kana" data-set="row" data-v="8">ラ行</button>
-        <button class="opt kana" data-set="row" data-v="9">ワ行</button>
+      <h2>文字の種類</h2>
+      <div class="opts">
+        <button class="opt" data-set="kind" data-v="kata">カタカナ</button>
+        <button class="opt" data-set="kind" data-v="hira">ひらがな</button>
       </div>
+    </div>
+
+    <div class="row">
+      <h2>行</h2>
+      <div id="rowOpts" class="opts rows"></div>
     </div>
 
     <section class="group" aria-labelledby="gScene">
@@ -289,7 +286,7 @@ window.addEventListener('resize', resize);
 resize();
 
 // ---- 設定（保存しない）----
-const S = { row: 0, ci: 0, adv: 'next', assist: 'mid', firstOnly: true, look: 'mid', cel: 'soft', vol: 30, sound: true };
+const S = { kind: 'kata', row: 0, ci: 0, adv: 'next', assist: 'mid', firstOnly: true, look: 'mid', cel: 'soft', vol: 30, sound: true };
 // 見た目の強さ：edge＝ふちの線、glow＝入れ口の光、stars＝星、bits＝紙くず、light＝明かり
 const LOOK = {
   soft:   { edge: 0.14, lw: 1,   glow: 0.18, stars: 2, bits: 4,  light: 0.45 },
@@ -410,7 +407,11 @@ function drawWash(){
 // =====================================================================
 // ---- もじ（カタカナを、書き順どおりに、一文字ずつなぞる）----
 const PENTA = [523, 587, 659, 784, 880, 988, 1175, 1319];
-const ROWS = ['アイウエオ', 'カキクケコ', 'サシスセソ', 'タチツテト', 'ナニヌネノ', 'ハヒフヘホ', 'マミムメモ', 'ヤユヨ', 'ラリルレロ', 'ワヲン'];
+const ROWSET = {
+  kata: ['アイウエオ', 'カキクケコ', 'サシスセソ', 'タチツテト', 'ナニヌネノ', 'ハヒフヘホ', 'マミムメモ', 'ヤユヨ', 'ラリルレロ', 'ワヲン'],
+  hira: ['あいうえお', 'かきくけこ', 'さしすせそ', 'たちつてと', 'なにぬねの', 'はひふへほ', 'まみむめも', 'やゆよ', 'らりるれろ', 'わをん']
+};
+const rows = () => ROWSET[S.kind];
 // 画の色（1画目・2画目・3画目・4画目）
 const SCOL = ['#e0707a', '#4f93cf', '#eda145', '#5fae78'];
 // 書き順のデータ（自作）。100×100 のます目。M＝始点、L＝まっすぐ、Q＝曲がり（制御点 終点）
@@ -460,7 +461,54 @@ const KANA = {
   'ロ': ['M20 22 L20 80', 'M20 22 L80 22 L80 80', 'M20 80 L80 80'],
   'ワ': ['M20 20 L20 46', 'M20 20 L80 20 Q78 62 36 92'],
   'ヲ': ['M16 20 L80 20', 'M20 46 L78 46', 'M80 20 Q76 62 30 92'],
-  'ン': ['M16 20 L36 34', 'M14 86 Q58 78 84 36']
+  'ン': ['M16 20 L36 34', 'M14 86 Q58 78 84 36'],
+  // ---- ひらがな ----
+  'あ': ['M24 32 C40 36 58 36 76 30', 'M52 12 C50 40 48 62 50 80', 'M30 52 C14 66 20 90 44 90 C70 88 86 68 72 54 C62 46 46 52 40 66'],
+  'い': ['M24 20 C20 48 22 68 32 78 C38 82 44 76 46 70', 'M68 32 C74 46 78 58 80 72'],
+  'う': ['M42 12 C50 14 56 16 62 20', 'M28 42 C46 36 64 38 72 44 C70 62 56 78 38 90'],
+  'え': ['M44 12 C50 14 54 16 58 18', 'M22 40 L68 38 C56 50 42 58 28 64 C44 68 52 72 40 84 C56 86 76 88 88 86'],
+  'お': ['M14 38 C30 40 46 38 60 34', 'M34 12 C34 40 32 62 34 76 C36 90 14 90 14 74 C14 60 48 52 60 62 C70 72 62 86 54 88', 'M66 16 L80 28'],
+  'か': ['M14 42 C32 40 50 38 66 36 C78 36 78 50 74 62 C70 74 66 84 52 88', 'M46 12 C46 40 40 68 24 88', 'M82 22 L88 32'],
+  'き': ['M26 28 C44 28 62 26 76 22', 'M20 46 C38 46 58 44 78 40', 'M56 10 C50 30 46 48 44 62', 'M28 68 C46 70 70 76 70 84 C66 94 40 90 28 80'],
+  'く': ['M64 12 L28 50 L66 88'],
+  'け': ['M26 14 C26 40 26 62 24 86', 'M44 40 C60 38 76 38 90 36', 'M66 12 C66 40 62 68 52 88'],
+  'こ': ['M30 24 C48 20 64 22 72 28', 'M24 66 C30 84 54 88 78 80'],
+  'さ': ['M20 38 L80 34', 'M54 12 C52 30 50 50 54 66', 'M28 72 C36 90 62 94 78 82'],
+  'し': ['M30 12 C28 50 30 78 44 86 C58 94 76 82 80 66'],
+  'す': ['M16 34 L84 34', 'M54 12 C54 36 54 58 54 66 C54 80 36 82 36 70 C36 62 50 60 56 66'],
+  'せ': ['M12 40 L88 38', 'M60 14 L60 62 C60 70 62 78 72 78', 'M34 12 C34 40 34 62 38 76 C44 90 66 90 84 86'],
+  'そ': ['M28 18 C46 20 62 18 72 18 C60 26 44 36 34 42 C46 40 62 44 70 48', 'M52 52 C40 64 52 76 56 82 C60 92 44 92 34 86'],
+  'た': ['M12 38 L58 36', 'M34 12 C30 48 24 72 14 88', 'M44 54 L86 54', 'M48 74 C58 90 76 90 88 80'],
+  'ち': ['M26 28 L74 26', 'M52 12 C50 36 48 56 46 66 C60 58 80 60 78 76 C76 90 56 90 40 82'],
+  'つ': ['M18 40 C30 30 64 30 78 44 C90 60 76 80 56 84'],
+  'て': ['M20 30 L80 28 C68 44 52 62 50 78 C50 90 64 92 76 84'],
+  'と': ['M34 12 C38 22 44 32 48 40', 'M62 34 C44 44 32 56 34 70 C36 84 56 92 78 84'],
+  'な': ['M12 36 L52 34', 'M34 12 C30 46 22 70 10 84', 'M62 24 C70 24 78 26 86 30', 'M52 46 C50 62 48 74 52 80 C46 94 28 90 34 74 C38 64 62 66 72 78'],
+  'に': ['M22 14 C22 40 22 66 20 86', 'M44 34 L84 32', 'M46 66 C52 84 70 88 86 78'],
+  'ぬ': ['M32 16 C28 40 24 64 14 84', 'M62 30 C42 40 32 60 40 78 C50 94 82 90 84 68 C86 48 66 42 52 56 C44 66 42 78 52 82'],
+  'ね': ['M30 12 C30 44 30 70 28 88', 'M10 44 C26 40 38 34 46 28', 'M58 14 C58 40 58 52 58 56 C70 52 84 64 82 76 C80 88 62 92 54 84 C50 80 60 70 70 76'],
+  'の': ['M56 30 C30 40 14 62 28 80 C44 96 76 86 82 60 C86 34 64 16 44 22 C32 26 30 36 38 42'],
+  'は': ['M16 14 L16 86', 'M38 36 L82 34', 'M60 12 L58 66 C58 80 38 84 38 72 C40 62 62 62 76 68'],
+  'ひ': ['M14 38 C28 40 46 36 62 28 C54 48 40 68 40 80 C42 94 64 94 74 80 C82 70 84 54 82 44'],
+  'ふ': ['M46 10 C50 14 54 20 54 26', 'M44 38 C58 40 66 46 60 56 C52 66 34 70 16 84', 'M24 62 L16 72', 'M76 56 L86 68'],
+  'へ': ['M12 62 L42 34 L90 78'],
+  'ほ': ['M16 14 L16 86', 'M36 30 L80 28', 'M36 48 L80 46', 'M58 12 C58 40 58 60 58 68 C58 82 38 84 40 72 C44 62 64 64 78 72'],
+  'ま': ['M26 28 L74 28', 'M22 48 L78 48', 'M52 10 L52 62 C52 80 32 84 34 70 C36 60 58 62 72 70'],
+  'み': ['M22 34 L66 32 C52 52 40 70 34 84', 'M50 58 C38 62 36 76 44 82 C54 90 78 84 82 66'],
+  'む': ['M14 36 L58 36', 'M36 12 C36 40 36 60 36 72 C36 90 56 92 70 82 C82 72 84 56 82 44', 'M70 14 C78 16 82 20 86 26'],
+  'め': ['M30 20 C36 40 34 58 22 76', 'M64 26 C40 28 36 64 52 80 C68 92 88 72 84 52 C80 36 62 36 50 58 C40 76 28 82 24 80'],
+  'も': ['M52 12 C52 40 52 64 52 74 C52 90 68 90 78 80', 'M20 38 L82 36', 'M20 56 L82 54'],
+  'や': ['M12 50 C28 38 56 32 82 40', 'M66 14 L76 24', 'M42 12 C46 40 42 68 30 90'],
+  'ゆ': ['M28 26 C28 52 26 72 34 82 C46 90 70 82 78 62 C84 44 74 34 60 38', 'M54 12 C54 40 54 66 54 86'],
+  'よ': ['M54 12 L52 44', 'M28 42 C46 40 62 40 76 42 C50 52 40 64 42 76 C46 88 64 90 78 82'],
+  'ら': ['M44 12 C50 14 56 18 60 22', 'M26 42 C40 40 54 42 62 46 C46 56 36 70 40 82 C48 94 74 90 78 76'],
+  'り': ['M28 14 C26 42 28 64 38 70 C46 72 52 66 54 60', 'M66 10 C68 44 66 74 48 90'],
+  'る': ['M28 20 C46 20 60 20 70 20 C54 38 38 52 26 62 C58 56 82 66 78 82 C76 92 54 94 44 84 C36 74 50 66 62 72'],
+  'れ': ['M30 12 C30 40 30 66 28 88', 'M10 40 L50 28', 'M56 14 C56 44 56 70 56 78 C56 90 68 92 78 84 C82 78 84 70 84 64'],
+  'ろ': ['M24 20 C42 20 58 20 70 20 C54 38 38 50 26 60 C58 54 80 64 78 78 C76 92 52 94 34 86'],
+  'わ': ['M30 12 C30 40 30 66 28 88', 'M10 44 C26 40 38 34 46 28', 'M56 28 C56 50 56 66 56 74 C56 90 82 90 86 72 C88 56 72 46 56 56'],
+  'を': ['M30 20 L72 18', 'M48 12 C44 34 36 46 24 52 C56 46 78 56 74 70 C72 82 56 82 46 76', 'M32 84 C46 92 66 90 80 80'],
+  'ん': ['M44 12 C40 40 30 64 14 80', 'M30 44 C46 36 62 46 66 66 C68 78 76 86 88 84']
 };
 // 手助け：tol＝線からどれだけ離れても進むか（ます目の大きさに対する割合）／idle＝何秒待つと、書く向きを示す点が動くか
 const asst = () => ({
@@ -498,20 +546,21 @@ function pointAt(g, s){
 }
 // 書き順のデータ（M L Q）を、画面の点の列にする
 function strokePts(d){
-  const n = d.match(/-?[\d.]+/g).map(Number), cmd = d.match(/[MLQ]/g), out = [];
+  const n = d.match(/-?[\d.]+/g).map(Number), cmd = d.match(/[MLQC]/g), out = [];
   const P = (x, y) => ({ x: BX.x + BX.s * (0.06 + 0.88 * x / 100), y: BX.y + BX.s * (0.06 + 0.88 * y / 100) });
   let i = 0, cx = 0, cy = 0;
   cmd.forEach(c => {
     if (c === 'M'){ cx = n[i++]; cy = n[i++]; out.push(P(cx, cy)); }
     else if (c === 'L'){ const x = n[i++], y = n[i++]; for (let k = 1; k <= 12; k++) out.push(P(lerp(cx, x, k / 12), lerp(cy, y, k / 12))); cx = x; cy = y; }
+    else if (c === 'C'){ const x1 = n[i++], y1 = n[i++], x2 = n[i++], y2 = n[i++], x = n[i++], y = n[i++]; for (let k = 1; k <= 24; k++){ const t = k / 24, u = 1 - t; out.push(P(u*u*u*cx + 3*u*u*t*x1 + 3*u*t*t*x2 + t*t*t*x, u*u*u*cy + 3*u*u*t*y1 + 3*u*t*t*y2 + t*t*t*y)); } cx = x; cy = y; }
     else { const qx = n[i++], qy = n[i++], x = n[i++], y = n[i++]; for (let k = 1; k <= 20; k++){ const t = k / 20, u = 1 - t; out.push(P(u * u * cx + 2 * u * t * qx + t * t * x, u * u * cy + 2 * u * t * qy + t * t * y)); } cx = x; cy = y; }
   });
   return out;
 }
-const curChar = () => ROWS[S.row][S.ci];
+const curChar = () => rows()[S.row][S.ci];
 function step(n){
   S.ci += n;
-  if (S.ci >= ROWS[S.row].length){ S.ci = 0; S.row = (S.row + 1) % ROWS.length; }
+  if (S.ci >= rows()[S.row].length){ S.ci = 0; S.row = (S.row + 1) % rows().length; }
 }
 function enter(){
   cancelAll(); layoutSheet(); phase = 'play'; phT = 0; fadeA = 1; cur = 0; idleT = 0;
@@ -741,12 +790,13 @@ gear.addEventListener('pointerdown', e => {
 ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => gear.addEventListener(ev, () => { clearTimeout(holdTimer); gear.classList.remove('hold'); }));
 gear.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openPanel(); } });
 
-function curOpts(){ return { cel: S.cel, row: String(S.row), ch: String(S.ci), adv: S.adv, assist: S.assist, touch: S.firstOnly ? 'first' : 'all', look: S.look, vol: S.sound ? String(S.vol) : '0' }; }
+function curOpts(){ return { kind: S.kind, cel: S.cel, row: String(S.row), ch: String(S.ci), adv: S.adv, assist: S.assist, touch: S.firstOnly ? 'first' : 'all', look: S.look, vol: S.sound ? String(S.vol) : '0' }; }
 const MORE_DEF = { touch: 'first', look: 'mid', vol: '30', cel: 'soft' };
 const MORE_LBL = { cel: { none: 'お祝い：なし', mid: 'お祝い：ふつう', big: 'お祝い：派手' }, touch: { all: '触れ方：どの指でも' }, look: { soft: '見た目：やさしい', strong: '見た目：はっきり' }, vol: { '0': '音：なし', '15': '音：小', '45': '音：大' } };
 function markOpts(){
+  $('rowOpts').innerHTML = rows().map((r, i) => `<button class="opt kana" data-set="row" data-v="${i}">${r[0]}行</button>`).join('');
   // この行の文字（押すと、その文字になる）
-  $('chOpts').innerHTML = [...ROWS[S.row]].map((c, i) => `<button class="opt kana" data-set="ch" data-v="${i}">${c}</button>`).join('');
+  $('chOpts').innerHTML = [...rows()[S.row]].map((c, i) => `<button class="opt kana" data-set="ch" data-v="${i}">${c}</button>`).join('');
   const cur = curOpts();
   document.querySelectorAll('#panel [data-set]').forEach(b => b.setAttribute('aria-pressed', String(cur[b.dataset.set] === b.dataset.v)));
   const ch = Object.keys(MORE_DEF).filter(k => cur[k] !== MORE_DEF[k]).map(k => (MORE_LBL[k] && MORE_LBL[k][cur[k]]) || '').filter(Boolean);
@@ -754,7 +804,8 @@ function markOpts(){
   $('undoBtn').disabled = !undoStack.length;
 }
 function applySet(k, v){
-  if (k === 'row'){ S.row = Number(v); S.ci = 0; enter(); }
+  if (k === 'kind'){ S.kind = v; S.row = 0; S.ci = 0; enter(); }
+  else if (k === 'row'){ S.row = Number(v); S.ci = 0; enter(); }
   else if (k === 'ch'){ S.ci = Number(v); enter(); }
   else if (k === 'adv') S.adv = v;
   else if (k === 'assist') S.assist = v;
