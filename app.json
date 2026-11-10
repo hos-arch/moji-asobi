@@ -1,0 +1,11 @@
+{
+  "id": "moji-asobi",
+  "title": "もじ あそび",
+  "desc": "ひらがな・カタカナを、書き順どおりに指でなぞる。",
+  "url": "https://moji-asobi.vbw.workers.dev/",
+  "order": [1],
+  "icon": "moji",
+  "thumb": "",
+  "group": "other",
+  "hidden": false
+}
