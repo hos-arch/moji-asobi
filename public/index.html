@@ -97,6 +97,8 @@ button:focus-visible,input:focus-visible{outline:3px solid #e0b24a;outline-offse
 /* 行と文字を選ぶ（支援者メニュー） */
 .opts.rows{grid-template-columns:repeat(5,1fr);gap:6px}
 .opt.kana{font-size:22px;padding:4px 2px}
+.opts.rows.lv{grid-template-columns:repeat(3,1fr)}
+.opts.rows.lv .opt.kana{font-size:18px}
 </style>
 </head>
 <body>
@@ -106,7 +108,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #e0b24a;outline-offse
 <div id="intro" role="dialog" aria-labelledby="introTitle">
   <div class="card">
     <h1 id="introTitle">もじ あそび（支援者用の説明）</h1>
-    <p>ひらがなとカタカナを、一文字ずつ、書き順のとおりに、指でなぞって書く遊びです。はじめはひらがなの「あ」です。書けると、つぎの文字へ進みます。カタカナは、支援者メニューの「文字の種類」で選びます。</p>
+    <p>ひらがなとカタカナを、一文字ずつ、書き順のとおりに、指でなぞって書く遊びです。はじめはひらがなの「し」です。かんたんな文字（初級）から、中級、上級の順に進みます。書けると、つぎの文字へ進みます。カタカナや、あいうえお順にしたいときは、支援者メニューで選びます。</p>
     <h2>すすめ方</h2>
     <ol>
       <li>「はじめる」を押す。ます目に、うすい色の文字が出ます。</li>
@@ -120,7 +122,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #e0b24a;outline-offse
       <li>しばらく待つと、書く向きを示す点が、始まりから終わりへ動きます。大人が先に、指でなぞってみせるのも良い方法です。</li>
       <li>文字の形は、画面でなぞりやすいように作った見本です。とめ・はね・はらいの細かい形は、紙に書くときに、大人が教えてください。</li>
       <li>ひらがなの書き順のデータは、KanjiVG（© Ulrich Apel、CC BY-SA 3.0）をもとにしています。</li>
-      <li>文字や行は、右上の点を1秒ほど長押しすると開く、支援者メニューで選べます。カメラもマイクも使いません。名前や記録も保存しません。</li>
+      <li>文字やレベルは、右上の点を1秒ほど長押しすると開く、支援者メニューで選べます。カメラもマイクも使いません。名前や記録も保存しません。</li>
     </ul>
     <button id="introBtn" type="button">はじめる</button>
   </div>
@@ -155,12 +157,21 @@ button:focus-visible,input:focus-visible{outline:3px solid #e0b24a;outline-offse
     </div>
 
     <div class="row">
-      <h2>行</h2>
+      <h2>順番</h2>
+      <div class="opts">
+        <button class="opt" data-set="order" data-v="level">やさしい順</button>
+        <button class="opt" data-set="order" data-v="gojuon">あいうえお順</button>
+      </div>
+      <p class="note">「やさしい順」は、初級・中級・上級に分けて、かんたんな文字から進みます。</p>
+    </div>
+
+    <div class="row">
+      <h2 id="rowH">レベル</h2>
       <div id="rowOpts" class="opts rows"></div>
     </div>
 
     <section class="group" aria-labelledby="gScene">
-      <h2 id="gScene">この行</h2>
+      <h2 id="gScene">この レベル</h2>
       <div class="row">
         <h3>文字</h3>
         <div id="chOpts" class="opts rows"></div>
@@ -171,7 +182,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #e0b24a;outline-offse
           <button class="opt" data-set="adv" data-v="next">つぎの文字へ</button>
           <button class="opt" data-set="adv" data-v="same">同じ文字をもう一度</button>
         </div>
-        <p class="note">「つぎの文字へ」は、行の終わりまで書くと、つぎの行へ進みます。</p>
+        <p class="note">「つぎの文字へ」は、レベル（または行）の終わりまで書くと、つぎへ進みます。</p>
       </div>
       <button id="againBtn" class="opt wide" type="button">この文字を、はじめから</button>
       <button id="nextBtn" class="opt wide" type="button">つぎの文字にする</button>
@@ -291,7 +302,7 @@ if (window.ResizeObserver) new ResizeObserver(() => resize()).observe(cv);
 resize();
 
 // ---- 設定（保存しない）----
-const S = { kind: 'hira', row: 0, ci: 0, adv: 'next', assist: 'mid', firstOnly: true, look: 'mid', cel: 'soft', vol: 30, sound: true };
+const S = { order: 'level', kind: 'hira', row: 0, ci: 0, adv: 'next', assist: 'mid', firstOnly: true, look: 'mid', cel: 'soft', vol: 30, sound: true };
 // 見た目の強さ：edge＝ふちの線、glow＝入れ口の光、stars＝星、bits＝紙くず、light＝明かり
 const LOOK = {
   soft:   { edge: 0.14, lw: 1,   glow: 0.18, stars: 2, bits: 4,  light: 0.45 },
@@ -416,7 +427,13 @@ const ROWSET = {
   kata: ['アイウエオ', 'カキクケコ', 'サシスセソ', 'タチツテト', 'ナニヌネノ', 'ハヒフヘホ', 'マミムメモ', 'ヤユヨ', 'ラリルレロ', 'ワヲン'],
   hira: ['あいうえお', 'かきくけこ', 'さしすせそ', 'たちつてと', 'なにぬねの', 'はひふへほ', 'まみむめも', 'やゆよ', 'らりるれろ', 'わをん']
 };
-const rows = () => ROWSET[S.kind];
+// やさしい順（レベル）：画数が少なく、形が単純な文字から。同じレベルの中も、やさしい順
+const LEVELS = {
+  hira: ['しくてつへのいこ', 'りうらえとよちひそるろん', 'すぬねみめゆれわ' + 'あおかけさせにはまむもやを' + 'きたなふほ'],
+  kata: ['ノヘフニトレソンコロ', 'クユスヌメムハリルラアイウカナヒ', 'ミヤヨワキシセタチツテネホマモ' + 'ヲエオケサ']
+};
+const LVNAME = ['初級', '中級', '上級'];
+const rows = () => S.order === 'level' ? LEVELS[S.kind] : ROWSET[S.kind];
 // 画の色（1画目・2画目・3画目・4画目）
 const SCOL = ['#e0707a', '#4f93cf', '#eda145', '#5fae78'];
 // 書き順のデータ。100×100 のます目。M＝始点、L＝まっすぐ、Q・C＝曲がり。カタカナは自作。ひらがなは KanjiVG（© Ulrich Apel, CC BY-SA 3.0）をもとに変換
@@ -800,11 +817,13 @@ gear.addEventListener('pointerdown', e => {
 ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => gear.addEventListener(ev, () => { clearTimeout(holdTimer); gear.classList.remove('hold'); }));
 gear.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openPanel(); } });
 
-function curOpts(){ return { kind: S.kind, cel: S.cel, row: String(S.row), ch: String(S.ci), adv: S.adv, assist: S.assist, touch: S.firstOnly ? 'first' : 'all', look: S.look, vol: S.sound ? String(S.vol) : '0' }; }
+function curOpts(){ return { order: S.order, kind: S.kind, cel: S.cel, row: String(S.row), ch: String(S.ci), adv: S.adv, assist: S.assist, touch: S.firstOnly ? 'first' : 'all', look: S.look, vol: S.sound ? String(S.vol) : '0' }; }
 const MORE_DEF = { touch: 'first', look: 'mid', vol: '30', cel: 'soft' };
 const MORE_LBL = { cel: { none: 'お祝い：なし', mid: 'お祝い：ふつう', big: 'お祝い：派手' }, touch: { all: '触れ方：どの指でも' }, look: { soft: '見た目：やさしい', strong: '見た目：はっきり' }, vol: { '0': '音：なし', '15': '音：小', '45': '音：大' } };
 function markOpts(){
-  $('rowOpts').innerHTML = rows().map((r, i) => `<button class="opt kana" data-set="row" data-v="${i}">${r[0]}行</button>`).join('');
+  const lv = S.order === 'level';
+  $('rowOpts').innerHTML = rows().map((r, i) => `<button class="opt kana" data-set="row" data-v="${i}">${lv ? LVNAME[i] : r[0] + '行'}</button>`).join('');
+  $('rowOpts').classList.toggle('lv', lv); $('rowH').textContent = lv ? 'レベル' : '行'; $('gScene').textContent = lv ? 'この レベル' : 'この行';
   // この行の文字（押すと、その文字になる）
   $('chOpts').innerHTML = [...rows()[S.row]].map((c, i) => `<button class="opt kana" data-set="ch" data-v="${i}">${c}</button>`).join('');
   const cur = curOpts();
@@ -814,7 +833,7 @@ function markOpts(){
   $('undoBtn').disabled = !undoStack.length;
 }
 function applySet(k, v){
-  if (k === 'kind'){ S.kind = v; S.row = 0; S.ci = 0; enter(); }
+  if (k === 'kind' || k === 'order'){ S[k] = v; S.row = 0; S.ci = 0; enter(); }
   else if (k === 'row'){ S.row = Number(v); S.ci = 0; enter(); }
   else if (k === 'ch'){ S.ci = Number(v); enter(); }
   else if (k === 'adv') S.adv = v;
